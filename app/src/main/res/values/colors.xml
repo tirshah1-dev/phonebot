@@ -1,0 +1,11 @@
+<resources>
+    <color name="bg_dark">#0B0F17</color>
+    <color name="card_dark">#151B27</color>
+    <color name="accent">#00E5A8</color>
+    <color name="accent_dim">#0B3B30</color>
+    <color name="text_primary">#E8ECF2</color>
+    <color name="text_secondary">#8A96A8</color>
+    <color name="danger">#FF5C5C</color>
+    <color name="terminal_bg">#06090F</color>
+    <color name="terminal_text">#39FF9B</color>
+</resources>

@@ -1,15 +1,15 @@
 package com.phonebot.app
 
+import android.Manifest
 import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
 import android.content.IntentFilter
 import android.content.pm.PackageManager
 import android.net.Uri
+import android.os.Build
 import android.os.Bundle
 import android.provider.Settings
-import android.telephony.SmsManager
-import android.util.DisplayMetrics
 import android.widget.Button
 import android.widget.EditText
 import android.widget.TextView
@@ -24,19 +24,15 @@ class MainActivity : AppCompatActivity() {
 
     private lateinit var output: TextView
     private lateinit var statusView: TextView
+    private lateinit var relayStatus: TextView
     private lateinit var cmdInput: EditText
-
-    private val apps = mapOf(
-        "telegram" to "org.telegram.messenger",
-        "whatsapp" to "com.whatsapp",
-        "instagram" to "com.instagram.android",
-        "chrome" to "com.android.chrome",
-        "settings" to "com.android.settings",
-        "youtube" to "com.google.android.youtube",
-        "messages" to "com.google.android.apps.messaging",
-    )
-
-    private var pendingSms: Pair<String, String>? = null
+    private lateinit var inToken: EditText
+    private lateinit var inOwner: EditText
+    private lateinit var inRepo: EditText
+    private lateinit var inDevice: EditText
+    private lateinit var inPass: EditText
+    private lateinit var btnToggleRelay: Button
+    private var pendingCmd: String? = null
 
     private val notifReceiver = object : BroadcastReceiver() {
         override fun onReceive(context: Context?, intent: Intent?) {
@@ -50,7 +46,16 @@ class MainActivity : AppCompatActivity() {
 
         output = findViewById(R.id.output)
         statusView = findViewById(R.id.status)
+        relayStatus = findViewById(R.id.relayStatus)
         cmdInput = findViewById(R.id.cmdInput)
+        inToken = findViewById(R.id.inToken)
+        inOwner = findViewById(R.id.inOwner)
+        inRepo = findViewById(R.id.inRepo)
+        inDevice = findViewById(R.id.inDevice)
+        inPass = findViewById(R.id.inPass)
+        btnToggleRelay = findViewById(R.id.btnToggleRelay)
+
+        loadCloudFields()
 
         findViewById<Button>(R.id.btnNotifAccess).setOnClickListener {
             startActivity(Intent(Settings.ACTION_NOTIFICATION_LISTENER_SETTINGS))
@@ -60,12 +65,28 @@ class MainActivity : AppCompatActivity() {
         }
         findViewById<Button>(R.id.btnRun).setOnClickListener {
             val cmd = cmdInput.text.toString().trim()
-            if (cmd.isNotEmpty()) runCommand(cmd)
+            if (cmd.isEmpty()) return@setOnClickListener
+            if (cmd.lowercase().startsWith("sms") &&
+                ContextCompat.checkSelfPermission(this, Manifest.permission.SEND_SMS)
+                != PackageManager.PERMISSION_GRANTED
+            ) {
+                pendingCmd = cmd
+                ActivityCompat.requestPermissions(this, arrayOf(Manifest.permission.SEND_SMS), SMS_PERMISSION_CODE)
+                return@setOnClickListener
+            }
+            output.text = CommandRunner.run(this, cmd)
         }
         findViewById<Button>(R.id.btnRefresh).setOnClickListener { refreshStatus() }
         findViewById<Button>(R.id.btnShare).setOnClickListener { shareIds() }
+        findViewById<Button>(R.id.btnSaveCloud).setOnClickListener { saveCloudFields() }
+        btnToggleRelay.setOnClickListener { toggleRelay() }
 
+        requestNotifPermissionIfNeeded()
         refreshStatus()
+        updateRelayButtonLabel()
+        if (Prefs.isRelayEnabled(this) && Prefs.isConfigured(this)) {
+            ContextCompat.startForegroundService(this, Intent(this, CloudRelayService::class.java))
+        }
     }
 
     override fun onStart() {
@@ -88,9 +109,9 @@ class MainActivity : AppCompatActivity() {
         if (requestCode == SMS_PERMISSION_CODE &&
             grantResults.isNotEmpty() && grantResults[0] == PackageManager.PERMISSION_GRANTED
         ) {
-            pendingSms?.let { (number, text) -> sendSms(number, text) }
+            pendingCmd?.let { output.text = CommandRunner.run(this, it) }
         }
-        pendingSms = null
+        pendingCmd = null
     }
 
     // ---------------------------------------------------------------- status
@@ -106,117 +127,69 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun refreshStatus() {
-        val notifOk = if (isNotifAccessEnabled()) "✅ فعال" else "❌ غیرفعال"
-        val accOk = if (isAccessibilityEnabled()) "✅ فعال" else "❌ غیرفعال"
+        val notifOk = if (isNotifAccessEnabled()) "✅ فعال" else "❌ غیرفعال — دکمه‌ی بالا را بزن"
+        val accOk = if (isAccessibilityEnabled()) "✅ فعال" else "❌ غیرفعال — دکمه‌ی بالا را بزن"
         statusView.text = "دسترسی اعلان‌ها: $notifOk\nAccessibility: $accOk"
         val ids = Store.readIds(this)
         output.text = "آیدی‌های ذخیره‌شده (${ids.size}):\n" + ids.joinToString("\n") +
-                "\n\n---\n\n" + Store.readLog(this).takeLast(4000)
+            "\n\n---\n\n" + Store.readLog(this).takeLast(4000)
     }
 
-    // ---------------------------------------------------------------- commands
-
-    private fun runCommand(line: String) {
-        val parts = line.trim().split(Regex("\\s+"))
-        val name = parts.getOrNull(0)?.lowercase() ?: return
-        val args = parts.drop(1)
-        val svc = ControlAccessibilityService.instance
-
-        fun needService(): Boolean {
-            if (svc == null) {
-                toast("اول Accessibility را در تنظیمات فعال کن.")
-                return false
-            }
-            return true
-        }
-
-        when (name) {
-            "notifs" -> output.text = Store.readLog(this).takeLast(6000)
-            "ids" -> output.text = Store.readIds(this).joinToString("\n")
-            "screen" -> { if (needService()) output.text = svc!!.dumpScreenText() }
-            "shot" -> {
-                if (needService()) svc!!.takeScreenshotToFile(this) { file ->
-                    toast(if (file != null) "ذخیره شد: ${file.name}" else "اسکرین‌شات ناموفق بود")
-                }
-            }
-            "tap" -> {
-                val x = args.getOrNull(0)?.toFloatOrNull()
-                val y = args.getOrNull(1)?.toFloatOrNull()
-                if (x != null && y != null && needService()) svc!!.tap(x, y) else toast("tap X Y")
-            }
-            "swipe" -> {
-                val n = args.mapNotNull { it.toFloatOrNull() }
-                if (n.size >= 4 && needService()) svc!!.swipe(n[0], n[1], n[2], n[3])
-                else toast("swipe x1 y1 x2 y2")
-            }
-            "scroll" -> {
-                if (!needService()) return
-                val dm: DisplayMetrics = resources.displayMetrics
-                val cx = dm.widthPixels / 2f
-                val (a, b) = if (args.getOrNull(0) == "up")
-                    (dm.heightPixels * 0.3f) to (dm.heightPixels * 0.7f)
-                else
-                    (dm.heightPixels * 0.7f) to (dm.heightPixels * 0.3f)
-                svc!!.swipe(cx, a, cx, b)
-            }
-            "key" -> {
-                if (!needService()) return
-                when (args.getOrNull(0)) {
-                    "back" -> svc!!.pressBack()
-                    "home" -> svc!!.pressHome()
-                    "recents" -> svc!!.pressRecents()
-                    else -> toast("key back|home|recents")
-                }
-            }
-            "type" -> {
-                val text = args.joinToString(" ")
-                if (text.isNotBlank() && needService()) {
-                    if (!svc!!.typeInFocused(text)) toast("فیلد متنی فعالی پیدا نشد")
-                } else toast("type متن")
-            }
-            "find" -> {
-                val text = args.joinToString(" ")
-                if (text.isNotBlank() && needService()) {
-                    if (!svc!!.clickNodeWithText(text)) toast("پیدا نشد: $text")
-                } else toast("find متن")
-            }
-            "open" -> {
-                val target = args.getOrNull(0) ?: return toast("open نام‌اپ یا پکیج")
-                val pkg = apps[target.lowercase()] ?: target
-                val intent = packageManager.getLaunchIntentForPackage(pkg)
-                if (intent != null) startActivity(intent) else toast("اپ پیدا نشد: $pkg")
-            }
-            "url" -> {
-                val url = args.getOrNull(0) ?: return toast("url آدرس")
-                startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(url)))
-            }
-            "sms" -> {
-                val number = args.getOrNull(0) ?: return toast("sms شماره متن")
-                val text = args.drop(1).joinToString(" ")
-                sendSms(number, text)
-            }
-            else -> toast("دستور ناشناخته: $name")
-        }
-    }
-
-    private fun sendSms(number: String, text: String) {
-        if (ContextCompat.checkSelfPermission(this, android.Manifest.permission.SEND_SMS)
+    private fun requestNotifPermissionIfNeeded() {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU &&
+            ContextCompat.checkSelfPermission(this, Manifest.permission.POST_NOTIFICATIONS)
             != PackageManager.PERMISSION_GRANTED
         ) {
-            pendingSms = number to text
-            ActivityCompat.requestPermissions(
-                this, arrayOf(android.Manifest.permission.SEND_SMS), SMS_PERMISSION_CODE
-            )
-            return
-        }
-        try {
-            val sms = getSystemService(SmsManager::class.java) ?: SmsManager.getDefault()
-            sms.sendTextMessage(number, null, text, null, null)
-            toast("پیامک ارسال شد")
-        } catch (e: Exception) {
-            toast("خطا در ارسال پیامک: ${e.message}")
+            ActivityCompat.requestPermissions(this, arrayOf(Manifest.permission.POST_NOTIFICATIONS), 200)
         }
     }
+
+    // ---------------------------------------------------------------- cloud
+
+    private fun loadCloudFields() {
+        inToken.setText(Prefs.getToken(this) ?: "")
+        inOwner.setText(Prefs.getOwner(this) ?: "")
+        inRepo.setText(Prefs.getRepo(this) ?: "")
+        inDevice.setText(Prefs.getDevice(this) ?: Build.MODEL.replace(" ", "-"))
+        inPass.setText(Prefs.getPass(this) ?: "")
+    }
+
+    private fun saveCloudFields() {
+        Prefs.setToken(this, inToken.text.toString().trim())
+        Prefs.setOwner(this, inOwner.text.toString().trim())
+        Prefs.setRepo(this, inRepo.text.toString().trim())
+        Prefs.setDevice(this, inDevice.text.toString().trim().ifBlank { Build.MODEL })
+        Prefs.setPass(this, inPass.text.toString())
+        toast("تنظیمات ابری ذخیره شد")
+        relayStatus.text = if (Prefs.isConfigured(this)) "آماده‌ی اتصال" else "تنظیمات ناقص است"
+    }
+
+    private fun toggleRelay() {
+        if (!Prefs.isConfigured(this)) {
+            saveCloudFields()
+            if (!Prefs.isConfigured(this)) {
+                toast("همه‌ی فیلدهای اتصال ابری را پر کن")
+                return
+            }
+        }
+        val enabled = !Prefs.isRelayEnabled(this)
+        Prefs.setRelayEnabled(this, enabled)
+        val intent = Intent(this, CloudRelayService::class.java)
+        if (enabled) {
+            ContextCompat.startForegroundService(this, intent)
+            relayStatus.text = "اتصال ابری فعال است — هر ۲۰ ثانیه همگام‌سازی می‌شود"
+        } else {
+            stopService(intent)
+            relayStatus.text = "اتصال ابری متوقف شد"
+        }
+        updateRelayButtonLabel()
+    }
+
+    private fun updateRelayButtonLabel() {
+        btnToggleRelay.text = if (Prefs.isRelayEnabled(this)) "توقف اتصال" else "شروع اتصال"
+    }
+
+    // ---------------------------------------------------------------- misc
 
     private fun shareIds() {
         val file = Store.idsFile(this)

@@ -1,7 +1,8 @@
 <?xml version="1.0" encoding="utf-8"?>
 <ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
     android:layout_width="match_parent"
-    android:layout_height="match_parent">
+    android:layout_height="match_parent"
+    android:background="@color/bg_dark">
 
     <LinearLayout
         android:layout_width="match_parent"
@@ -10,76 +11,217 @@
         android:padding="16dp">
 
         <TextView
-            android:id="@+id/status"
-            android:layout_width="match_parent"
+            android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:textSize="14sp"
-            android:paddingBottom="12dp" />
+            android:text="⟡ PHONEBOT"
+            android:textColor="@color/accent"
+            android:textSize="24sp"
+            android:textStyle="bold"
+            android:letterSpacing="0.08" />
 
-        <Button
-            android:id="@+id/btnNotifAccess"
-            android:layout_width="match_parent"
+        <TextView
+            android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:text="فعال‌سازی دسترسی اعلان‌ها" />
+            android:layout_marginTop="2dp"
+            android:layout_marginBottom="16dp"
+            android:text="کنترل و رصد امن گوشی"
+            android:textColor="@color/text_secondary"
+            android:textSize="12sp" />
 
-        <Button
-            android:id="@+id/btnAccessibility"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="4dp"
-            android:text="فعال‌سازی Accessibility" />
-
-        <EditText
-            android:id="@+id/cmdInput"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="16dp"
-            android:hint="دستور: tap 500 800 | type سلام | open telegram | key back | ..."
-            android:inputType="text" />
-
+        <!-- وضعیت مجوزها -->
         <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_marginTop="4dp"
-            android:orientation="horizontal">
+            android:background="@drawable/card_bg"
+            android:orientation="vertical"
+            android:padding="16dp">
+
+            <TextView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="مجوزهای روی دستگاه"
+                android:textColor="@color/text_primary"
+                android:textStyle="bold" />
+
+            <TextView
+                android:id="@+id/status"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="8dp"
+                android:textColor="@color/text_secondary"
+                android:textSize="13sp" />
 
             <Button
-                android:id="@+id/btnRun"
-                android:layout_width="0dp"
-                android:layout_height="wrap_content"
-                android:layout_weight="1"
-                android:text="اجرا" />
+                android:id="@+id/btnNotifAccess"
+                style="@style/BtnOutline"
+                android:layout_marginTop="12dp"
+                android:text="فعال‌سازی دسترسی اعلان‌ها" />
 
             <Button
-                android:id="@+id/btnRefresh"
-                android:layout_width="0dp"
-                android:layout_height="wrap_content"
-                android:layout_weight="1"
-                android:text="بروزرسانی" />
-
-            <Button
-                android:id="@+id/btnShare"
-                android:layout_width="0dp"
-                android:layout_height="wrap_content"
-                android:layout_weight="1"
-                android:text="اشتراک آیدی‌ها" />
+                android:id="@+id/btnAccessibility"
+                style="@style/BtnOutline"
+                android:layout_marginTop="8dp"
+                android:text="فعال‌سازی Accessibility" />
         </LinearLayout>
 
-        <TextView
+        <!-- اتصال ابری -->
+        <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_marginTop="16dp"
-            android:text="دستورهای پشتیبانی‌شده: notifs, ids, screen, shot, tap x y, swipe x1 y1 x2 y2, scroll up|down, key back|home|recents, type متن, find متن, open telegram|whatsapp|instagram|chrome|youtube|messages|پکیج, sms شماره متن"
-            android:textSize="11sp"
-            android:textColor="#777777" />
+            android:background="@drawable/card_bg"
+            android:orientation="vertical"
+            android:padding="16dp">
 
-        <TextView
-            android:id="@+id/output"
+            <TextView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="اتصال ابری (دسترسی از هر جا)"
+                android:textColor="@color/text_primary"
+                android:textStyle="bold" />
+
+            <TextView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="4dp"
+                android:text="داده‌ها رمزنگاری‌شده با رمز خودت از طریق مخزن خصوصی گیت‌هاب رد و بدل می‌شوند."
+                android:textColor="@color/text_secondary"
+                android:textSize="11sp" />
+
+            <EditText
+                android:id="@+id/inToken"
+                style="@style/FieldInput"
+                android:layout_marginTop="12dp"
+                android:hint="GitHub Token (ghp_... یا fine-grained)"
+                android:inputType="textPassword" />
+
+            <EditText
+                android:id="@+id/inOwner"
+                style="@style/FieldInput"
+                android:layout_marginTop="8dp"
+                android:hint="نام‌کاربری گیت‌هاب (owner)" />
+
+            <EditText
+                android:id="@+id/inRepo"
+                style="@style/FieldInput"
+                android:layout_marginTop="8dp"
+                android:hint="نام ریپو (مثلاً phonebot)" />
+
+            <EditText
+                android:id="@+id/inDevice"
+                style="@style/FieldInput"
+                android:layout_marginTop="8dp"
+                android:hint="نام این دستگاه (مثلاً gushi-man)" />
+
+            <EditText
+                android:id="@+id/inPass"
+                style="@style/FieldInput"
+                android:layout_marginTop="8dp"
+                android:hint="رمز رمزنگاری (فقط پیش خودت می‌ماند)"
+                android:inputType="textPassword" />
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="12dp"
+                android:orientation="horizontal">
+
+                <Button
+                    android:id="@+id/btnSaveCloud"
+                    style="@style/BtnOutline"
+                    android:layout_width="0dp"
+                    android:layout_weight="1"
+                    android:text="ذخیره" />
+
+                <Button
+                    android:id="@+id/btnToggleRelay"
+                    style="@style/BtnAccent"
+                    android:layout_width="0dp"
+                    android:layout_marginStart="8dp"
+                    android:layout_weight="1"
+                    android:text="شروع اتصال" />
+            </LinearLayout>
+
+            <TextView
+                android:id="@+id/relayStatus"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="8dp"
+                android:textColor="@color/text_secondary"
+                android:textSize="11sp" />
+        </LinearLayout>
+
+        <!-- کنسول دستور محلی -->
+        <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_marginTop="16dp"
-            android:fontFamily="monospace"
-            android:textIsSelectable="true"
-            android:textSize="12sp" />
+            android:background="@drawable/card_bg"
+            android:orientation="vertical"
+            android:padding="16dp">
+
+            <TextView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="کنسول دستور (روی همین گوشی)"
+                android:textColor="@color/text_primary"
+                android:textStyle="bold" />
+
+            <EditText
+                android:id="@+id/cmdInput"
+                style="@style/FieldInput"
+                android:layout_marginTop="10dp"
+                android:hint="tap 500 800 | type سلام | open telegram | ids | notifs" />
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="8dp"
+                android:orientation="horizontal">
+
+                <Button
+                    android:id="@+id/btnRun"
+                    style="@style/BtnAccent"
+                    android:layout_width="0dp"
+                    android:layout_weight="1"
+                    android:text="اجرا" />
+
+                <Button
+                    android:id="@+id/btnRefresh"
+                    style="@style/BtnOutline"
+                    android:layout_width="0dp"
+                    android:layout_marginStart="8dp"
+                    android:layout_weight="1"
+                    android:text="بروزرسانی" />
+
+                <Button
+                    android:id="@+id/btnShare"
+                    style="@style/BtnOutline"
+                    android:layout_width="0dp"
+                    android:layout_marginStart="8dp"
+                    android:layout_weight="1"
+                    android:text="اشتراک" />
+            </LinearLayout>
+
+            <TextView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="10dp"
+                android:text="notifs, ids, screen, shot, tap x y, swipe x1 y1 x2 y2, scroll up|down, key back|home|recents, type متن, find متن, open app, url, sms شماره متن"
+                android:textColor="@color/text_secondary"
+                android:textSize="10sp" />
+
+            <TextView
+                android:id="@+id/output"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="12dp"
+                android:background="@drawable/terminal_bg"
+                android:fontFamily="monospace"
+                android:padding="12dp"
+                android:textColor="@color/terminal_text"
+                android:textIsSelectable="true"
+                android:textSize="11sp" />
+        </LinearLayout>
     </LinearLayout>
 </ScrollView>
