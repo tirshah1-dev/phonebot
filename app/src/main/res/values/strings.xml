@@ -1,0 +1,4 @@
+<resources>
+    <string name="app_name">PhoneBot</string>
+    <string name="accessibility_service_description">به PhoneBot اجازه می‌دهد محتوای صفحه را بخواند و لمس/تایپ خودکار انجام دهد.</string>
+</resources>
